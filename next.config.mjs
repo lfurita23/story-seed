@@ -1,16 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  /* config options here */
-  cacheComponents: true,
-  partialPrefetching: true,
-  turbopack: {
-    rules: {
-      "*.css": {
-        loaders: ["@tailwindcss/turbopack"],
-        as: "*.css",
-      },
-    },
-  },
+  output: 'export',
+  basePath: process.env.GITHUB_PAGES === 'true' ? '/story-seed' : '',
+  trailingSlash: true,
+  images: { unoptimized: true },
 };
-
 export default nextConfig;
