@@ -1,69 +1,35 @@
-import Image from "next/image";
-
-export default function Home() {
-  return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.js
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
-  );
+'use client';
+import {useEffect,useRef,useState} from 'react';
+import {KEY,empty,read,commit,merge,validate} from '../lib/store.mjs';
+const uid=()=>crypto.randomUUID();
+const stamp=()=>new Date().toISOString();
+const date=s=>s?new Date(s).toLocaleString('ko-KR'):'';
+const blank=(type,workId)=>type==='works'?{title:'',genre:'판타지',status:'구상 중',summary:'',world:'',color:'violet'}:type==='episodes'?{workId,title:'',number:'1',content:'',status:'초고',characterIds:[]}:{workId,name:'',role:'',personality:'',appearance:'',ability:'',memo:''};
+function download(data,name){const a=document.createElement('a');const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+export default function Home(){
+ const [db,setDb]=useState(empty),[ready,setReady]=useState(false),[locked,setLocked]=useState(false),[notice,setNotice]=useState(''),[tab,setTab]=useState('works'),[workId,setWorkId]=useState(''),[query,setQuery]=useState(''),[filter,setFilter]=useState('전체'),[editor,setEditor]=useState(null),[dirty,setDirty]=useState(false),[mobile,setMobile]=useState(false);const file=useRef(null),dialog=useRef(null),lastFocus=useRef(null);
+ useEffect(()=>{try{setDb(read(localStorage));setReady(true);}catch(e){setLocked(true);setNotice('저장 데이터 읽기 실패: '+e.message+' 원본을 내보낸 뒤 복구하세요.');}const guard=e=>{if(document.body.dataset.dirty==='yes'){e.preventDefault();e.returnValue='';}};window.addEventListener('beforeunload',guard);return()=>window.removeEventListener('beforeunload',guard);},[]);
+ useEffect(()=>{document.body.dataset.dirty=dirty?'yes':'no';},[dirty]);
+ useEffect(()=>{if(editor){lastFocus.current=document.activeElement;dialog.current?.showModal();}else{dialog.current?.close();lastFocus.current?.focus();}},[!!editor]);
+ useEffect(()=>{const onStorage=e=>{if(e.key===KEY){setLocked(true);setNotice('다른 탭에서 저장 내용이 변경되었습니다. 편집 내용은 복사해 보관하고 새로고침하세요.');}};window.addEventListener('storage',onStorage);return()=>window.removeEventListener('storage',onStorage);},[]);
+ const works=db.works,work=works.find(w=>w.id===workId),episodes=db.episodes.filter(e=>e.workId===workId).sort((a,b)=>Number(a.number)-Number(b.number)),characters=db.characters.filter(c=>c.workId===workId);
+ function save(next,msg){if(!ready||locked){setNotice('저장이 잠겨 있습니다. 원본을 백업하고 새로고침하세요.');return false;}try{const saved=commit(localStorage,db,next);setDb(saved);setNotice(msg+' · '+new Date().toLocaleTimeString('ko-KR'));return true;}catch(e){setNotice('저장 실패: '+e.message+' 입력 내용은 창에 남아 있습니다.');return false;}}
+ function open(type,row){setEditor({type,data:row?structuredClone(row):{...blank(type,workId),...(type==='episodes'?{number:String(Math.max(0,...episodes.map(e=>Number(e.number)))+1)}:{})}});setDirty(false);}
+ function close(){if(dirty&&!confirm('저장하지 않은 입력을 닫을까요?'))return;setEditor(null);setDirty(false);}
+ function update(key,value){setEditor(e=>({...e,data:{...e.data,[key]:value}}));setDirty(true);}
+ function submit(e){e.preventDefault();const {type,data}=editor;const row={...data,id:data.id||uid(),updatedAt:stamp()};if(type==='works')row.title=row.title.trim();if(type==='characters')row.name=row.name.trim();if(type==='episodes'){row.title=row.title.trim();row.number=String(Number(row.number));}const next={...db,[type]:data.id?db[type].map(r=>r.id===data.id?row:r):[...db[type],row]};try{validate(next);}catch(err){setNotice(err.message);return;}if(save(next,'저장 완료')){setDirty(false);setEditor(null);}}
+ function remove(type,row){const count=type==='works'?` 연결된 회차 ${db.episodes.filter(e=>e.workId===row.id).length}개와 캐릭터 ${db.characters.filter(e=>e.workId===row.id).length}개도 삭제됩니다.`:'';if(!confirm(`「${row.title||row.name}」을 삭제할까요?${count} 삭제 전 백업이 자동 다운로드됩니다.`))return;download(db,'seosa-before-delete-'+Date.now()+'.json');let next={...db,[type]:db[type].filter(r=>r.id!==row.id)};if(type==='works'){next.episodes=next.episodes.filter(r=>r.workId!==row.id);next.characters=next.characters.filter(r=>r.workId!==row.id);}if(type==='characters')next.episodes=next.episodes.map(r=>({...r,characterIds:r.characterIds.filter(id=>id!==row.id)}));save(next,'삭제 완료');}
+ async function importFile(e){const f=e.target.files?.[0];e.target.value='';if(!f)return;try{if(f.size>20*1024*1024)throw Error('20MB 이하의 파일을 선택하세요.');const incoming=validate(JSON.parse(await f.text()));if(!confirm(`작품 ${incoming.works.length}개를 새 ID로 추가합니다. 같은 백업을 다시 가져오면 복제본이 생깁니다. 계속할까요?`))return;download(db,'seosa-before-import-'+Date.now()+'.json');save(merge(db,incoming,uid),'백업 병합 완료');}catch(err){setNotice('가져오기 실패: '+err.message);}}
+ function nav(next){setTab(next);setQuery('');setMobile(false);}
+ const titles={works:'내 작품',overview:'작품 개요',episodes:'회차 작업실',characters:'주요 캐릭터',backup:'데이터 백업'};
+ const list=tab==='works'?works.filter(w=>(filter==='전체'||w.status===filter)&&w.title.includes(query)).sort((a,b)=>(b.updatedAt||'').localeCompare(a.updatedAt||'')):[];
+ return <div className="shell"><aside className={mobile?'sidebar show':'sidebar'}><a className="brand" href="#" onClick={e=>{e.preventDefault();nav('works');}}><span className="logo">✎</span> 서사 <small>SEOSA</small></a><button className={tab==='works'?'nav active':'nav'} onClick={()=>nav('works')}>▥　내 작품 <small>{works.length}</small></button><div className="side-rule"/><p className="muted tiny">현재 작품</p><select aria-label="현재 작품" value={workId} onChange={e=>{setWorkId(e.target.value);setQuery('');}}><option value="">작품을 선택하세요</option>{works.map(w=><option key={w.id} value={w.id}>{w.title}</option>)}</select><div className="nav-group">{['overview','episodes','characters'].map((x,i)=><button key={x} className={tab===x?'nav active':'nav'} onClick={()=>nav(x)}>{['◫','▤','♧'][i]}　{titles[x]}</button>)}</div><button className={tab==='backup'?'nav active':'nav'} onClick={()=>nav('backup')}>⇩　데이터 백업</button><div className="side-bottom"><strong>나의 집필 공간</strong><p>이야기를 만들고,<br/>당신만의 세계를 쌓아보세요.</p><span className="badge">수동 집필 · 개인 보관</span></div></aside><div className="main"><header><button className="mobile-toggle" onClick={()=>setMobile(!mobile)} aria-label="메뉴 열기">☰</button><span>내 작품　 ›　 <b>{work?.title||'나의 워크스페이스'}</b>　 ›　 <span className="purple">{titles[tab]}</span></span><span className="header-note">SEOSA WRITING STUDIO</span></header><main><div className="page-heading"><div><p className="eyebrow">YOUR STORIES, YOUR WORLD</p><h1>{titles[tab]}</h1><p className="muted">{tab==='works'?'하나의 문장에서 시작해, 당신만의 세계로.':tab==='backup'?'소중한 이야기를 파일로 보관하세요.':'회차가 쌓일수록, 당신의 이야기는 더 선명해집니다.'}</p></div>{tab==='works'?<button className="primary" disabled={!ready||locked} onClick={()=>open('works')}>＋ 새 작품 시작</button>:work&&tab!=='backup'?<button className="primary" disabled={locked} onClick={()=>open(tab==='overview'?'works':tab,tab==='overview'?work:null)}>{tab==='overview'?'작품 정보 수정':tab==='episodes'?'＋ 회차 직접 작성':'＋ 캐릭터 직접 추가'}</button>:null}</div><div role="status" aria-live="polite" className={notice?'notice':'notice empty-notice'}>{notice}</div>{locked&&<button onClick={()=>{const raw=localStorage.getItem(KEY);download({raw},'seosa-raw-recovery.json');}}>현재 저장 원본 내보내기</button>}
+ {tab==='works'&&<><section className="stats"><span>함께 쌓아온 이야기</span><b>{works.length}<small> 작품</small></b><span>등록된 회차</span><b>{db.episodes.length}<small> 화</small></b><span>기억하고 있는 인물</span><b>{db.characters.length}<small> 명</small></b></section><div className="toolbar"><div className="tabs">{['전체','집필 중','구상 중','연재 중','완결'].map(s=><button className={filter===s?'selected':''} key={s} onClick={()=>setFilter(s)}>{s}</button>)}</div><input aria-label="작품명 검색" placeholder="⌕ 작품명 검색" value={query} onChange={e=>setQuery(e.target.value)}/></div><div className="work-grid">{list.map((w,i)=><article className="work-card" key={w.id}><button className={'cover '+(w.color||'violet')} onClick={()=>{setWorkId(w.id);nav('overview');}}><span>SEOSA ORIGINAL · {w.genre}</span><h2>{w.title}</h2><div className="cover-art">{['✦','◒','☾'][i%3]}</div></button><div className="card-body"><span className="badge">{w.genre}</span> <span className="badge lavender">{w.status}</span><p className="summary">{w.summary||'이야기의 첫 문장을 기다리고 있어요.'}</p><p>▤ {db.episodes.filter(e=>e.workId===w.id).length}화　♧ 주요 인물 {db.characters.filter(e=>e.workId===w.id).length}명</p><div className="card-footer"><small className="muted">{date(w.updatedAt)}</small><button onClick={()=>open('works',w)}>수정</button><button className="danger" onClick={()=>remove('works',w)}>삭제</button></div><button className="text-link" onClick={()=>{setWorkId(w.id);nav('episodes');}}>작업실 열기 ↗</button></div></article>)}</div>{!list.length&&<div className="empty-state"><span>✎</span><h2>{works.length?'검색 결과가 없습니다':'첫 이야기를 시작해 볼까요?'}</h2><p>새 작품을 만들고, 원고와 인물을 하나의 공간에 모으세요.</p></div>}<div className="callout"><strong>오늘의 한 문장이, 내일의 이야기가 됩니다.</strong><p>다른 곳에서 작성한 원고도 회차 작업실에 붙여넣어 보관할 수 있어요.</p></div></>}
+ {['overview','episodes','characters'].includes(tab)&&!work&&<div className="empty-state"><h2>먼저 작품을 선택하세요</h2><p>왼쪽 작품 선택 메뉴에서 작업할 작품을 고르세요.</p><button onClick={()=>nav('works')}>내 작품으로</button></div>}
+ {tab==='overview'&&work&&<div className="overview"><section className="panel"><span className="badge lavender">{work.status}</span><h2>{work.title}</h2><p className="pre">{work.summary||'작품 소개를 입력해 주세요.'}</p><hr/><h3>세계관 노트</h3><p className="pre">{work.world||'이야기의 배경과 규칙을 기록해 보세요.'}</p></section><section className="panel"><h3>작품 기록</h3><p>등록 회차 <b>{episodes.length}화</b></p><p>주요 캐릭터 <b>{characters.length}명</b></p><p>장르 <b>{work.genre}</b></p><button onClick={()=>nav('episodes')}>회차 작업실 열기 ↗</button></section></div>}
+ {tab==='episodes'&&work&&<><div className="toolbar"><p className="muted">총 {episodes.length}화 · 원고와 등장인물을 직접 연결합니다.</p><input aria-label="회차 검색" placeholder="회차 제목 검색" value={query} onChange={e=>setQuery(e.target.value)}/></div><div className="episode-list">{episodes.filter(e=>e.title.includes(query)).map(e=><article className="panel episode" key={e.id}><div><span className="eyebrow">CHAPTER {e.number} <span className="badge lavender">{e.status}</span></span><h2>{e.title}</h2><p className="excerpt">{e.content||'원고 없음'}</p><small className="muted">공백 포함 {(e.content||'').length.toLocaleString()}자 · {date(e.updatedAt)}</small><p className="purple tiny">등장인물: {e.characterIds.map(id=>characters.find(c=>c.id===id)?.name).join(', ')||'미지정'}</p></div><div className="actions"><button onClick={()=>open('episodes',e)}>원고 열기 / 수정</button><button className="danger" onClick={()=>remove('episodes',e)}>삭제</button></div></article>)}</div>{!episodes.length&&<div className="empty-state"><h2>첫 회차를 작성해 주세요</h2><p>초고와 등록 완료 상태를 구분해 보관할 수 있어요.</p></div>}</>}
+ {tab==='characters'&&work&&<><div className="toolbar"><strong>전체 캐릭터 {characters.length}</strong><input aria-label="캐릭터 검색" placeholder="이름, 역할로 검색" value={query} onChange={e=>setQuery(e.target.value)}/></div><div className="character-grid">{characters.filter(c=>(c.name+' '+c.role).includes(query)).map(c=><article className="panel character" key={c.id}><div className="character-head"><div className="avatar">{c.name.slice(0,1)}</div><div><span className="badge">{c.role||'역할 미정'}</span><h2>{c.name}</h2></div></div>{[['성격',c.personality],['외형',c.appearance],['능력 · 특징',c.ability],['작가 메모',c.memo]].map(([label,value])=><div key={label}><p className="muted tiny">{label}</p><p className="pre">{value||'아직 기록이 없습니다.'}</p></div>)}<p className="purple tiny">등장 회차: {episodes.filter(e=>e.characterIds.includes(c.id)).map(e=>e.number+'화').join(', ')||'없음'}</p><div className="actions"><button onClick={()=>open('characters',c)}>정보 수정</button><button className="danger" onClick={()=>remove('characters',c)}>삭제</button></div></article>)}</div>{!characters.length&&<div className="empty-state"><h2>이야기를 이끌 인물을 기록하세요</h2><p>이 작품에 속한 캐릭터만 표시됩니다.</p></div>}</>}
+ {tab==='backup'&&<section className="panel backup"><h2>이야기의 안전한 사본</h2><p>데이터는 현재 브라우저와 접속 주소에 저장됩니다. 브라우저 데이터 삭제나 PC 변경에 대비해 정기적으로 JSON 백업을 내려받으세요.</p><div className="actions"><button className="primary" disabled={!ready} onClick={()=>download(db,'seosa-backup-'+Date.now()+'.json')}>전체 JSON 백업</button><button disabled={!ready||locked} onClick={()=>file.current.click()}>백업 병합 가져오기</button><input ref={file} type="file" accept="application/json,.json" hidden onChange={importFile}/></div><hr/><h3>직전 저장본 복구</h3><p>모든 저장 직전에 이전 상태를 별도 보관합니다. 먼저 현재 백업을 내려받고 복구하세요.</p><button disabled={!ready||locked} onClick={()=>{try{const raw=localStorage.getItem(KEY+'.backup');if(!raw)throw Error('직전 저장본이 없습니다.');const old=validate(JSON.parse(raw));if(confirm('현재 데이터 대신 직전 저장본을 복구할까요? 현재 상태도 다운로드됩니다.')){download(db,'seosa-before-restore-'+Date.now()+'.json');save({...old,revision:db.revision},'직전 저장본 복구 완료');}}catch(e){setNotice(e.message);}}}>직전 저장본으로 복구</button><p className="muted">이전 starter의 저장 키는 수정하지 않습니다. 형식이 확인되지 않은 이전 데이터는 자동 변환하지 않습니다.</p></section>}
+ <footer>✧ 모든 이야기는 당신의 손에서 시작됩니다. <span>SEOSA · 개인 집필 공간</span></footer></main></div>
+ <dialog ref={dialog} onCancel={e=>{e.preventDefault();close();}}><div className="dialog-head"><h2>{editor?.type==='works'?'작품 정보':editor?.type==='episodes'?'회차 작업실':'캐릭터 설정'}</h2><button type="button" onClick={close} aria-label="편집 닫기">✕</button></div>{editor&&<form onSubmit={submit}><p className="muted tiny">{editor.type!=='works'?work?.title:'당신만의 이야기를 기록하세요.'} · 별표 항목은 필수입니다.</p>{(editor.type==='works'?[['title','작품명 *'],['genre','장르'],['status','집필 상태','select',['구상 중','집필 중','연재 중','완결']],['color','표지 색상','select',['violet','green','night']],['summary','작품 소개','area'],['world','세계관 노트','area']]:editor.type==='episodes'?[['number','회차 번호 *','number'],['title','회차 제목 *'],['status','회차 상태','select',['초고','검토 중','등록 완료']],['content','원고','manuscript']]:[['name','이름 *'],['role','역할'],['personality','성격','area'],['appearance','외형','area'],['ability','능력 · 특징','area'],['memo','작가 메모','area']]).map(([key,label,type,options])=><label className="field" key={key}>{label}{type==='select'?<select value={editor.data[key]} onChange={e=>update(key,e.target.value)}>{options.map(o=><option key={o}>{o}</option>)}</select>:type==='area'||type==='manuscript'?<textarea className={type==='manuscript'?'manuscript':''} rows={type==='manuscript'?16:3} value={editor.data[key]||''} onChange={e=>update(key,e.target.value)}/>:<input type={type||'text'} min={type==='number'?1:undefined} step={type==='number'?1:undefined} required={['title','name','number'].includes(key)} value={editor.data[key]||''} onChange={e=>update(key,e.target.value)}/>}</label>)}{editor.type==='episodes'&&<fieldset><legend>등장 캐릭터 연결</legend>{characters.length?characters.map(c=><label className="check" key={c.id}><input type="checkbox" checked={editor.data.characterIds.includes(c.id)} onChange={e=>update('characterIds',e.target.checked?[...editor.data.characterIds,c.id]:editor.data.characterIds.filter(id=>id!==c.id))}/>{c.name}</label>):<p className="muted">주요 캐릭터 메뉴에서 인물을 먼저 등록하세요.</p>}<p className="muted tiny">공백 포함 {(editor.data.content||'').length.toLocaleString()}자 · {dirty?'저장하지 않은 변경 있음':'저장된 내용 / 새 입력'}</p></fieldset>}<p role="status" className="purple">{notice}</p><div className="dialog-footer"><button type="button" onClick={close}>취소</button><button className="primary" disabled={locked||!ready} type="submit">{editor.type==='episodes'?'원고 저장':'저장'}</button></div></form>}</dialog></div>;
 }

@@ -1,0 +1,9 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {KEY,empty,read,commit,merge,validate} from '../src/lib/store.mjs';
+const fixture=()=>({version:2,revision:0,works:[{id:'w',title:'작품'}],characters:[{id:'c',workId:'w',name:'인물'}],episodes:[{id:'e',workId:'w',title:'회차',number:'1',content:'원고',characterIds:['c']}]});
+const storage=()=>{const m=new Map();return {getItem:k=>m.get(k)??null,setItem:(k,v)=>m.set(k,v)}};
+test('save preserves legacy key, saves previous snapshot, rejects stale writes',()=>{const s=storage();s.setItem('legacy-novels','untouched');const a=commit(s,empty(),fixture());const b=commit(s,a,{...a,works:[{id:'w',title:'수정'}]});assert.equal(read(s).revision,2);assert.equal(JSON.parse(s.getItem(KEY+'.backup')).works[0].title,'작품');assert.equal(s.getItem('legacy-novels'),'untouched');assert.throws(()=>commit(s,a,a),/다른 탭/);assert.equal(b.revision,2);});
+test('quota failure leaves primary snapshot intact',()=>{const s=storage();const a=commit(s,empty(),fixture());const previous=s.getItem(KEY);const failing={getItem:s.getItem,setItem:(k,v)=>{if(k===KEY)throw Error('quota');s.setItem(k,v)}};assert.throws(()=>commit(failing,a,a),/quota/);assert.equal(s.getItem(KEY),previous);});
+test('corrupt data and broken relationships are rejected',()=>{const s=storage();s.setItem(KEY,'broken');assert.throws(()=>read(s));const f=fixture();f.episodes[0].characterIds=['missing'];assert.throws(()=>validate(f));const d=fixture();d.episodes.push({...d.episodes[0],id:'e2'});assert.throws(()=>validate(d),/중복 회차/);});
+test('merge remaps every relationship and retains original records',()=>{let n=0;const out=merge(fixture(),fixture(),()=>String(++n));assert.equal(out.works.length,2);assert.equal(out.episodes[0].workId,'w');assert.equal(out.episodes[1].workId,out.works[1].id);assert.equal(out.episodes[1].characterIds[0],out.characters[1].id);assert.equal(out.characters[1].workId,out.works[1].id);});
