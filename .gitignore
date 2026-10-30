@@ -44,3 +44,6 @@ next-env.d.ts
 seosa-backup-*.json
 seosa-before-*.json
 seosa-raw-recovery.json
+
+# Local preview logs
+next-dev.*.log

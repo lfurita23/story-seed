@@ -1,3 +1,4 @@
+import {isCharacterImage} from './character-images.mjs';
 export const KEY='seosa.manual.v2';
 export const empty=()=>({version:2,revision:0,works:[],episodes:[],characters:[]});
 export function validate(d){
@@ -5,6 +6,7 @@ export function validate(d){
  for(const name of ['works','episodes','characters']){if(!Array.isArray(d[name]))throw Error('데이터 목록이 올바르지 않습니다.');const ids=new Set();for(const r of d[name]){if(!r||typeof r.id!=='string'||!r.id||ids.has(r.id))throw Error('중복되거나 잘못된 ID입니다.');ids.add(r.id);for(const v of Object.values(r))if(typeof v!=='string'&&!Array.isArray(v))throw Error('잘못된 필드입니다.');}}
  const fields={works:['title','genre','status','summary','world','color','updatedAt'],episodes:['workId','title','number','content','status','updatedAt'],characters:['workId','name','role','personality','appearance','ability','memo','updatedAt']};
  for(const name of Object.keys(fields))for(const row of d[name])for(const key of fields[name])if(row[key]!==undefined&&typeof row[key]!=='string')throw Error('텍스트 필드 형식이 올바르지 않습니다.');
+ for(const c of d.characters)if(c.image!==undefined&&c.image!==''&&!isCharacterImage(c.image))throw Error('캐릭터 이미지 형식이나 크기를 확인하세요.');
  const works=new Set(d.works.map(r=>r.id));const chars=new Map(d.characters.map(r=>[r.id,r]));
  for(const w of d.works)if(!w.title?.trim())throw Error('작품명이 없습니다.');
  for(const c of d.characters)if(!works.has(c.workId)||!c.name?.trim())throw Error('캐릭터 연결을 확인하세요.');

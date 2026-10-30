@@ -1,0 +1,25 @@
+'use client';
+import Link from 'next/link';
+import {useEffect,useState} from 'react';
+import {useRouter} from 'next/navigation';
+import {getAuth,authConfigured,authError,authUrl} from '../lib/auth-client';
+const copy={login:['로그인','당신의 이야기를 이어가세요.','로그인'],signup:['이야기의 시작을 함께','새로운 집필 계정을 만들어 보세요.','회원가입'],forgot:['비밀번호를 잊으셨나요?','가입한 이메일로 재설정 링크를 보내드립니다.','재설정 메일 받기'],reset:['새 비밀번호 설정','안전한 비밀번호로 변경해 주세요.','비밀번호 변경']};
+export default function AuthScreen({mode}){
+ const router=useRouter();const [email,setEmail]=useState(''),[password,setPassword]=useState(''),[confirm,setConfirm]=useState(''),[show,setShow]=useState(false),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[error,setError]=useState(''),[recovery,setRecovery]=useState(false),[checking,setChecking]=useState(mode==='reset');
+ useEffect(()=>{const auth=getAuth();if(!auth){setChecking(false);return}let alive=true;const {data}=auth.auth.onAuthStateChange((event)=>{if(event==='PASSWORD_RECOVERY'&&alive){setRecovery(true);setChecking(false)}});
+ if(mode==='reset')auth.auth.getSession().then(({data,error})=>{if(alive){setRecovery(!error&&Boolean(data.session));setChecking(false)}});
+ return()=>{alive=false;data.subscription.unsubscribe()}},[mode]);
+ async function submit(e){e.preventDefault();setError('');setMessage('');const auth=getAuth();if(!auth){setError('계정 서비스 연결을 준비 중입니다. 지금은 작품 목록에서 로컬 집필을 이용해 주세요.');return}
+ if((mode==='signup'||mode==='reset')&&password!==confirm){setError('비밀번호가 서로 다릅니다.');return}
+ setBusy(true);try{
+ if(mode==='login'){const {error}=await auth.auth.signInWithPassword({email:email.trim(),password});if(error)throw error;router.replace('/');router.refresh()}
+ if(mode==='signup'){const {data,error}=await auth.auth.signUp({email:email.trim(),password,options:{emailRedirectTo:authUrl()}});if(error)throw error;if(data.session){router.replace('/');router.refresh()}else{setMessage('가입 요청을 접수했습니다. 이메일 인증이 필요한 경우 메일함을 확인해 주세요.');setPassword('');setConfirm('')}}
+ if(mode==='forgot'){const {error}=await auth.auth.resetPasswordForEmail(email.trim(),{redirectTo:authUrl('reset-password')});if(error)throw error;setMessage('해당 주소로 가입된 계정이 있다면 재설정 메일이 발송됩니다. 스팸함도 확인해 주세요.')}
+ if(mode==='reset'){if(!recovery)throw Error('invalid recovery');const {error}=await auth.auth.updateUser({password});if(error)throw error;await auth.auth.signOut({scope:'local'});setRecovery(false);setPassword('');setConfirm('');setMessage('비밀번호를 변경했습니다. 새 비밀번호로 로그인해 주세요.')}
+ }catch(e){setError(authError(e))}finally{setBusy(false)}}
+ return <main className="auth-page auth-compact"><Link className="auth-brand" href="/">Story Seed</Link><section className="auth-card"><h1>{copy[mode][0]}</h1>{mode!=='login'&&<p className="muted">{copy[mode][1]}</p>}{mode==='reset'&&!checking&&!recovery&&!message&&authConfigured&&<p className="auth-info">유효한 재설정 링크로 접속해 주세요. <Link href="/forgot-password/">메일 다시 받기</Link></p>}<form onSubmit={submit}>
+ {mode!=='reset'&&<label className="field">아이디 <span className="field-hint">(이메일)</span><input name="email" type="email" autoComplete="email" required maxLength={254} value={email} onChange={e=>setEmail(e.target.value)} placeholder="이메일 주소를 입력하세요"/></label>}
+ {mode!=='forgot'&&<><label className="field">{mode==='reset'?'새 비밀번호':'비밀번호'}<div className="password-field"><input name="password" type={show?'text':'password'} autoComplete={mode==='login'?'current-password':'new-password'} required minLength={mode==='login'?1:8} value={password} onChange={e=>setPassword(e.target.value)} placeholder={mode==='login'?'비밀번호를 입력하세요':'8자 이상 입력하세요'}/><button type="button" onClick={()=>setShow(!show)} aria-pressed={show} aria-label={show?'비밀번호 숨기기':'비밀번호 보기'} title={show?'비밀번호 숨기기':'비밀번호 보기'}><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>{show&&<path d="m3 3 18 18"/>}</svg></button></div></label>{mode==='signup'||mode==='reset'?<label className="field">비밀번호 확인<input name="confirm-password" type={show?'text':'password'} autoComplete="new-password" required minLength={8} value={confirm} onChange={e=>setConfirm(e.target.value)} placeholder="같은 비밀번호를 다시 입력하세요"/></label>:null}</>}
+ {error&&<p role="alert" className="auth-error">{error}</p>}{message&&<p role="status" className="auth-success">{message}</p>}<button type="submit" className="primary auth-submit" disabled={busy||!authConfigured||(mode==='reset'&&(!recovery||checking))}>{busy?'처리 중…':copy[mode][2]}</button></form>
+ <nav className="auth-links" aria-label="계정 메뉴">{mode==='login'?<><button type="button" onClick={()=>{setError('');setMessage('아이디는 가입할 때 사용한 이메일 주소입니다.');}}>아이디 찾기</button><Link href="/forgot-password/">비밀번호 찾기</Link><Link href="/signup/">회원가입</Link></>:<Link href="/login/">로그인으로 돌아가기</Link>}</nav><Link className="auth-home" href="/">← 작품 목록으로</Link>{!authConfigured&&<p className="auth-connection-note" role="status">계정 서비스 연결 준비 중</p>}</section></main>;
+}

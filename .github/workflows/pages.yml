@@ -21,7 +21,7 @@ jobs:
           cache: npm
       - uses: actions/configure-pages@v5
       - run: npm ci
-      - run: node --test tests/store.test.mjs
+      - run: node --test tests/*.test.mjs
       - run: npm run build
         env:
           GITHUB_PAGES: 'true'
