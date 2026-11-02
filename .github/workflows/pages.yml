@@ -25,6 +25,12 @@ jobs:
       - run: npm run build
         env:
           GITHUB_PAGES: 'true'
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL || 'https://qtrzbmmxjkgdbsxqsywr.supabase.co' }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_lwPah7MEmCjLwWzhh9tErQ_0uYjQyhM' }}
+          NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.NEXT_PUBLIC_TURNSTILE_SITE_KEY }}
+          NEXT_PUBLIC_GOOGLE_LOGIN: ${{ vars.NEXT_PUBLIC_GOOGLE_LOGIN }}
+          NEXT_PUBLIC_NAVER_LOGIN: ${{ vars.NEXT_PUBLIC_NAVER_LOGIN }}
+          NEXT_PUBLIC_KAKAO_LOGIN: ${{ vars.NEXT_PUBLIC_KAKAO_LOGIN }}
       - run: touch out/.nojekyll
       - uses: actions/upload-pages-artifact@v3
         with:
