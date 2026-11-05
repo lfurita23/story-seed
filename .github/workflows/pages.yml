@@ -25,8 +25,10 @@ jobs:
       - run: npm run build
         env:
           GITHUB_PAGES: 'true'
-          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL || 'https://qtrzbmmxjkgdbsxqsywr.supabase.co' }}
-          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_lwPah7MEmCjLwWzhh9tErQ_0uYjQyhM' }}
+          # Public client configuration, fixed to the dedicated Story Seed project.
+          # Do not let stale repository variables reconnect Stage Diary accounts.
+          NEXT_PUBLIC_SUPABASE_URL: 'https://utvoealamrtiuutdtvlb.supabase.co'
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_yMGjL_uhc_plwgCrRU5_cA_yA9rTZdP'
           NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.NEXT_PUBLIC_TURNSTILE_SITE_KEY }}
           NEXT_PUBLIC_GOOGLE_LOGIN: ${{ vars.NEXT_PUBLIC_GOOGLE_LOGIN }}
           NEXT_PUBLIC_NAVER_LOGIN: ${{ vars.NEXT_PUBLIC_NAVER_LOGIN }}

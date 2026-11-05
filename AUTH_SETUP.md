@@ -1,4 +1,19 @@
-2026-11-02 로컬 테스트: 사용자의 승인으로 Supabase Confirm email을 임시 해제했습니다. 신규 가입은 이메일 소유 확인 없이 세션을 받습니다. SMTP 연결과 이메일 인증 복원은 추후 작업입니다. 기존 미인증 계정은 상태에 따라 재가입 요청 또는 관리자 확인이 필요할 수 있습니다.
+# 2026-11-05 인증 프로젝트 분리 준비
+
+- 전용 프로젝트: novel-team 조직의 story-seed (`utvoealamrtiuutdtvlb`). 실제 조회: Auth 사용자 0명, episodes/lore_books/novels 테이블, 모두 RLS 활성화. 보안 advisor 결과 없음.
+- 운영 Site URL과 로그인/복구 리디렉션 4개를 전용 프로젝트에 저장했다.
+- GitHub Pages workflow는 전용 프로젝트 URL과 공개 publishable key를 명시한다. 이전 공용 프로젝트를 가리키는 repository variables는 더 이상 사용하지 않는다. 관리자 키는 포함하지 않는다.
+- 세션 저장 키는 `story-seed.utvoealamrtiuutdtvlb.auth`로 분리했다. 이전 세션을 새 프로젝트에 넘기지 않으며, 원고 키 `seosa.manual.v2`와 백업은 건드리지 않는다.
+- 로그인/가입 화면에 전용 계정 재가입 안내를 추가했다. 기존 공용 프로젝트의 계정은 삭제/이전하지 않는다.
+- 새 프로젝트의 이메일 인증은 ON 유지. SMTP는 아직 저장되지 않아 운영 전환/배포는 대기 중이다. 사용자는 직접 소유한 도메인이 없어 Gmail SMTP로 먼저 설정하기로 했다.
+- Gmail SMTP: smtp.gmail.com, 465, Sender email/Username은 발송용 Gmail 전체 주소, Sender name은 Story Seed, Password는 사용자가 직접 만든 Google 앱 비밀번호. 2단계 인증 필요. 비밀번호는 Supabase 화면에 사용자가 직접 입력/저장하며 채팅/소스/문서에 기록하지 않는다.
+- Gmail은 개인용 발송 서비스이므로 도달률/발송 제한이 있으며 서비스 확대 시 전용 발송 서비스로 전환한다.
+- 검증: 기존 14개 테스트 통과, GitHub Pages 모드 build 통과, export JS에서 새 프로젝트 1개/기존 공용 프로젝트 0개/전용 세션 키 1개 확인. 실제 가입/메일 수신은 SMTP 설정 후 사용자가 검증해야 한다.
+- SMTP 저장 및 수신 확인 후 이 변경을 master에 반영/배포하고 실제 배포 스크립트의 프로젝트 URL을 다시 비교한다. 그 전에는 Stage Diary 계정 삭제 함수를 활성화하지 않는다.
+
+아래는 이전 공용 프로젝트 연결 당시 기록이며 현재 전용 프로젝트 설정으로 간주하지 않는다.
+
+2026-11-02 로컬 테스트: 사용자의 승인으로 이전 공용 Supabase Confirm email을 임시 해제했습니다.
 
 # 현재 적용: 기본 이메일 회원가입·로그인
 
