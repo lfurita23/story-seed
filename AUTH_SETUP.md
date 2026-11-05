@@ -5,7 +5,7 @@
 - GitHub Pages workflow는 전용 프로젝트 URL과 공개 publishable key를 명시한다. 이전 공용 프로젝트를 가리키는 repository variables는 더 이상 사용하지 않는다. 관리자 키는 포함하지 않는다.
 - 세션 저장 키는 `story-seed.utvoealamrtiuutdtvlb.auth`로 분리했다. 이전 세션을 새 프로젝트에 넘기지 않으며, 원고 키 `seosa.manual.v2`와 백업은 건드리지 않는다.
 - 로그인/가입 화면에 전용 계정 재가입 안내를 추가했다. 기존 공용 프로젝트의 계정은 삭제/이전하지 않는다.
-- 새 프로젝트의 이메일 인증은 ON 유지. SMTP는 아직 저장되지 않아 운영 전환/배포는 대기 중이다. 사용자는 직접 소유한 도메인이 없어 Gmail SMTP로 먼저 설정하기로 했다.
+- 새 프로젝트의 이메일 인증은 ON 유지. 사용자가 Gmail SMTP를 입력하고 저장했으며, 관리자 화면에서 활성화 및 저장된 비밀번호 표시를 확인했다. 실제 메일 도달은 사용자의 회원가입으로 확인한다.
 - Gmail SMTP: smtp.gmail.com, 465, Sender email/Username은 발송용 Gmail 전체 주소, Sender name은 Story Seed, Password는 사용자가 직접 만든 Google 앱 비밀번호. 2단계 인증 필요. 비밀번호는 Supabase 화면에 사용자가 직접 입력/저장하며 채팅/소스/문서에 기록하지 않는다.
 - Gmail은 개인용 발송 서비스이므로 도달률/발송 제한이 있으며 서비스 확대 시 전용 발송 서비스로 전환한다.
 - 검증: 기존 14개 테스트 통과, GitHub Pages 모드 build 통과, export JS에서 새 프로젝트 1개/기존 공용 프로젝트 0개/전용 세션 키 1개 확인. 실제 가입/메일 수신은 SMTP 설정 후 사용자가 검증해야 한다.
